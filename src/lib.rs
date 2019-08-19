@@ -1,9 +1,16 @@
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate rmp_serde as rmps;
+
 use std::mem;
 use std::ops::{Shl, Shr, Add, AddAssign, Sub, SubAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign};
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::num::TryFromIntError;
 use std::cmp::Ordering;
+use serde::{Deserialize, Serialize};
+use rmps::{Deserializer, Serializer};
 
 #[allow(non_camel_case_types,dead_code)]
 pub type u40 = UIntPair<u8>;
@@ -12,7 +19,7 @@ pub type u40 = UIntPair<u8>;
 pub type u48 = UIntPair<u16>;
 
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct UIntPair<T> {
     /// member containing lower significant integer value
     low: u32,
