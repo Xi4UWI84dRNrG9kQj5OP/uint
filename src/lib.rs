@@ -46,14 +46,14 @@ impl<T: Int> UIntPair<T> {
         val.into()
     }
 
-    pub fn min_value() -> Self {
+    pub const fn min_value() -> Self {
         Self {
             low: 0,
             high: T::MIN_VALUE
         }
     }
 
-    pub fn max_value() -> Self {
+    pub const fn max_value() -> Self {
         Self {
             low: u32::max_value(),
             high: T::MAX_VALUE
@@ -690,7 +690,7 @@ impl<T: Int> From<i64> for UIntPair<T> {
 /// Stellt sicher, dass der Wert (in high) einen Maximal- und Minimalwert besitzt.
 pub trait Int: Into<u64> + From<u8> + Copy + Shl<Output=Self> + Add<Output=Self> 
           + BitAnd<Output=Self> + Debug + TryFrom<u64, Error=TryFromIntError> + Sub<Output=Self> 
-          + PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self> {
+          + PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self> + Sized {
     const MAX_VALUE: Self;
     const MIN_VALUE: Self;
     fn wrapping_add(self, rhs: Self) -> Self;
@@ -699,26 +699,41 @@ pub trait Int: Into<u64> + From<u8> + Copy + Shl<Output=Self> + Add<Output=Self>
 
 pub trait Typable {
     const TYPE: &'static str; 
-    const MAX_VALUE: Self;
-    const MIN_VALUE: Self;
+    fn max_value() -> Self;
+    fn min_value() -> Self;
 }
 
 impl Typable for u64 {
     const TYPE: &'static str = "u64";
-    const MAX_VALUE: Self = Self::max_value();
-    const MIN_VALUE: Self = Self::min_value();
+
+    fn max_value() -> Self {
+        Self::max_value()
+    }
+    fn min_value() -> Self {
+        Self::min_value()
+    }
 }
 
 impl Typable for u40 {
     const TYPE: &'static str = "u40";
-    const MAX_VALUE: Self = Self::max_value();
-    const MIN_VALUE: Self = Self::min_value();
+    
+    fn max_value() -> Self {
+        Self::max_value()
+    }
+    fn min_value() -> Self {
+        Self::min_value()
+    }
 }
 
 impl Typable for u48 {
     const TYPE: &'static str = "u48";
-    const MAX_VALUE: Self = Self::max_value();
-    const MIN_VALUE: Self = Self::min_value();
+    
+    fn max_value() -> Self {
+        Self::max_value()
+    }
+    fn min_value() -> Self {
+        Self::min_value()
+    }
 }
 
 
