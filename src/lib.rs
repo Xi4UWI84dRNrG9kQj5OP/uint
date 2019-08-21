@@ -690,7 +690,7 @@ impl<T: Int> From<i64> for UIntPair<T> {
 /// Stellt sicher, dass der Wert (in high) einen Maximal- und Minimalwert besitzt.
 pub trait Int: Into<u64> + From<u8> + Copy + Shl<Output=Self> + Add<Output=Self> 
           + BitAnd<Output=Self> + Debug + TryFrom<u64, Error=TryFromIntError> + Sub<Output=Self> 
-          + PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self> + Sized {
+          + PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self>  {
     const MAX_VALUE: Self;
     const MIN_VALUE: Self;
     fn wrapping_add(self, rhs: Self) -> Self;
