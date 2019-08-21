@@ -695,8 +695,26 @@ pub trait Int: Into<u64> + From<u8> + Copy + Shl<Output=Self> + Add<Output=Self>
     const MIN_VALUE: Self;
     fn wrapping_add(self, rhs: Self) -> Self;
     fn wrapping_sub(self, rhs: Self) -> Self;
-    
 }
+
+pub trait Typable {
+    const TYPE: &'static str; 
+}
+
+impl Typable for u64 {
+    const TYPE: &'static str = "u64";
+}
+
+impl Typable for u40 {
+    const TYPE: &'static str = "u40";
+}
+
+impl Typable for u48 {
+    const TYPE: &'static str = "u48";
+}
+
+
+
 
 impl Int for u32 {
     const MAX_VALUE: Self = Self::max_value();
