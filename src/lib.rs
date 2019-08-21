@@ -46,14 +46,14 @@ impl<T: Int> UIntPair<T> {
         val.into()
     }
 
-    pub const fn min_value() -> Self {
+    pub fn min_value() -> Self {
         Self {
             low: 0,
             high: T::MIN_VALUE
         }
     }
 
-    pub const fn max_value() -> Self {
+    pub fn max_value() -> Self {
         Self {
             low: u32::max_value(),
             high: T::MAX_VALUE
