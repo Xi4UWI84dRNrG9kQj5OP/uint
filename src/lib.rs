@@ -10,7 +10,6 @@ use std::fmt::Debug;
 use std::num::TryFromIntError;
 use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
-use rmps::{Deserializer, Serializer};
 
 #[allow(non_camel_case_types,dead_code)]
 pub type u40 = UIntPair<u8>;
@@ -686,11 +685,18 @@ impl<T: Int> From<i64> for UIntPair<T> {
     }
 }
 
+/// Ermöglicht das Sortieren der Werte
+impl<T: Int> Ord for UIntPair<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        u64::from(*self).cmp(&u64::from(*other))
+    }
+}
+
 
 /// Stellt sicher, dass der Wert (in high) einen Maximal- und Minimalwert besitzt.
 pub trait Int: Into<u64> + From<u8> + Copy + Shl<Output=Self> + Add<Output=Self> 
           + BitAnd<Output=Self> + Debug + TryFrom<u64, Error=TryFromIntError> + Sub<Output=Self> 
-          + PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self>  {
+          + PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self> + Eq  {
     const MAX_VALUE: Self;
     const MIN_VALUE: Self;
     fn wrapping_add(self, rhs: Self) -> Self;
