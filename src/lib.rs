@@ -21,7 +21,7 @@ pub type u48 = UIntPair<u16>;
 #[derive(Copy, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct UIntPair<T> {
     /// member containing lower significant integer value
-    low: u32,
+    low: [u8;4],
 
     /// member containing higher significant integer value
     high: T,
@@ -47,14 +47,14 @@ impl<T: Int> UIntPair<T> {
 
     pub fn min_value() -> Self {
         Self {
-            low: 0,
+            low: [0;4],
             high: T::MIN_VALUE
         }
     }
 
     pub fn max_value() -> Self {
         Self {
-            low: u32::max_value(),
+            low: [1;4],
             high: T::MAX_VALUE
         }
     }
@@ -104,8 +104,11 @@ macro_rules! impl_UIntPair_traits {
 
                 // rhs is the "right-hand side" of the expression `a & b`
                 fn bitand(self, rhs: $int) -> Self::Output {
+                    let low_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(self.low) }.to_le();
+                    let new_low = low_as_arr & rhs as u32;
+                
                     Self {
-                        low: self.low & rhs as u32,
+                        low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
                         high: self.high 
                     }
                 }
@@ -117,8 +120,11 @@ macro_rules! impl_UIntPair_traits {
 
                 // rhs is the "right-hand side" of the expression `a & b`
                 fn bitand(self, rhs: UIntPair<T>) -> Self::Output {
+                    let low_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(rhs.low) }.to_le();
+                    let new_low = low_as_arr & self as u32;
+
                     UIntPair {
-                        low: self as u32 & rhs.low,
+                        low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
                         high: rhs.high 
                     }
                 }
@@ -129,8 +135,11 @@ macro_rules! impl_UIntPair_traits {
                 type Output = Self;
 
                 fn bitor(self, rhs: $int) -> Self::Output {
+                    let low_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(self.low) }.to_le();
+                    let new_low = low_as_arr | rhs as u32;
+                
                     Self {
-                        low: self.low | rhs as u32,
+                        low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
                         high: self.high 
                     }
                 }
@@ -141,8 +150,11 @@ macro_rules! impl_UIntPair_traits {
                 type Output = UIntPair<T>;
 
                 fn bitor(self, rhs: UIntPair<T>) -> Self::Output {
+                    let low_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(rhs.low) }.to_le();
+                    let new_low = low_as_arr | self as u32;
+
                     UIntPair {
-                        low: self as u32 | rhs.low,
+                        low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
                         high: rhs.high 
                     }
                 }
@@ -153,8 +165,11 @@ macro_rules! impl_UIntPair_traits {
                 type Output = Self;
 
                 fn bitxor(self, rhs: $int) -> Self::Output {
+                    let low_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(self.low) }.to_le();
+                    let new_low = low_as_arr ^ rhs as u32;
+                
                     Self {
-                        low: self.low ^ rhs as u32,
+                        low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
                         high: self.high 
                     }
                 }
@@ -165,8 +180,11 @@ macro_rules! impl_UIntPair_traits {
                 type Output = UIntPair<T>;
 
                 fn bitxor(self, rhs: UIntPair<T>) -> Self::Output {
+                    let low_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(rhs.low) }.to_le();
+                    let new_low = low_as_arr ^ self as u32;
+
                     UIntPair {
-                        low: self as u32 ^ rhs.low,
+                        low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
                         high: rhs.high 
                     }
                 }
@@ -379,8 +397,12 @@ impl<T: Int> BitAnd for UIntPair<T> {
 
     // rhs is the "right-hand side" of the expression `a & b`
     fn bitand(self, rhs: Self) -> Self::Output {
+        let low_self_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(self.low) }.to_le();
+        let low_rhs_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(rhs.low) }.to_le();
+        
+        let new_low = low_self_as_arr & low_rhs_as_arr;
         Self {
-            low: self.low & rhs.low,
+            low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
             high: self.high & rhs.high
         }
     }
@@ -411,8 +433,12 @@ impl<T: Int> BitOr for UIntPair<T> {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
+        let low_self_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(self.low) }.to_le();
+        let low_rhs_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(rhs.low) }.to_le();
+        
+        let new_low = low_self_as_arr | low_rhs_as_arr;
         Self {
-            low: self.low | rhs.low,
+            low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
             high: self.high | rhs.high
         }
     }
@@ -441,8 +467,12 @@ impl<T: Int> BitXor for UIntPair<T> {
     type Output = Self;
 
     fn bitxor(self, rhs: Self) -> Self::Output {
+        let low_self_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(self.low) }.to_le();
+        let low_rhs_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(rhs.low) }.to_le();
+        
+        let new_low = low_self_as_arr ^ low_rhs_as_arr;
         Self {
-            low: self.low ^ rhs.low,
+            low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
             high: self.high ^ rhs.high
         }
     }
@@ -470,7 +500,7 @@ impl<T: Int> BitXor<UIntPair<T>> for u64 {
 impl<T: Int> From<u32> for UIntPair<T> {
     fn from(item: u32) -> Self {
         Self {
-            low: item,
+            low: unsafe { std::mem::transmute::<u32, [u8; 4]>(item) },
             high: T::MIN_VALUE
         }
     }
@@ -483,7 +513,7 @@ impl<T: Int> From<i32> for UIntPair<T> {
             Self::from(item as u32)
         } else {
             Self {
-                low: item as u32,
+                low: unsafe { std::mem::transmute::<i32, [u8; 4]>(item) },
                 high: T::MAX_VALUE
             }
         }
@@ -522,7 +552,7 @@ impl<T: Int> From<i8> for UIntPair<T> {
 impl<T: Int> From<UIntPair<T>> for u64 {
     fn from(item: UIntPair<T>) -> Self {
         let low_bits: u64 = (UIntPair::<T>::LOW_BITS as u8).into();
-        item.high.into() << low_bits | (item.low as u64)
+        item.high.into() << low_bits | (unsafe { std::mem::transmute::<[u8; 4], u32>(item.low) }.to_le() as u64)
     }
 }
 
@@ -601,12 +631,7 @@ impl<T: Int> Sub for UIntPair<T> {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        let sub_low = (self.low as u64).wrapping_sub(other.low as u64);
-        let sub_high = (sub_low >> Self::LOW_BITS) as u8;
-        Self {
-            low: (sub_low & u32::max_value() as u64) as u32,
-            high: self.high - other.high + (T::from(sub_high) & T::MAX_VALUE) 
-        }
+        (u64::from(self) - u64::from(other)).into()
     }
 }
 
@@ -635,10 +660,12 @@ impl<T: Int> Add for UIntPair<T> {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        let add_low = (self.low as u64).wrapping_add(other.low as u64);
+        let add_low = (unsafe { std::mem::transmute::<[u8; 4], u32>(self.low) }.to_le() as u64).wrapping_add(unsafe { std::mem::transmute::<[u8; 4], u32>(other.low) }.to_le() as u64);
         let add_high = (add_low >> Self::LOW_BITS) as u8;
+
+        let new_low = (add_low & u32::max_value() as u64) as u32;
         Self {
-            low: (add_low & u32::max_value() as u64) as u32,
+            low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
             high: self.high + other.high + (T::from(add_high) & T::MAX_VALUE) 
         }
     }
@@ -667,11 +694,11 @@ impl<T: Int> From<u64> for UIntPair<T> {
     fn from(item: u64) -> Self {
         assert!(item >> Self::DIGITS == 0, "You tried to convert a real u64 into a smaller value. You would lose information.");
         
-        let low = item & u32::max_value() as u64;
+        let new_low = item & u32::max_value() as u64;
         let high = (item >> Self::LOW_BITS) & T::MAX_VALUE.into();
         
         Self {
-            low: low as u32,
+            low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low as u32) },
             high: T::try_from(high).expect("From<u64> for UIntPair<T> ist schiefgelaufen.")
         }
     }
@@ -797,7 +824,7 @@ mod tests {
             b -= i as u16;
             c -= i as u32;
             d -= i as u64;
-            right_val -= i as u64;
+            right_val = right_val.wrapping_sub(i as u64);
         }
 
         assert_eq!(u64::from(b),right_val);
