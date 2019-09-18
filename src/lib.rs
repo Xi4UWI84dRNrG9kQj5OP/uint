@@ -4,24 +4,24 @@ extern crate serde_derive;
 extern crate rmp_serde as rmps;
 
 use std::mem;
-use std::ops::{Shl, Shr, Add, AddAssign, Sub, SubAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign};
+use std::ops::{Shl, Shr, Add, AddAssign, Sub, SubAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Rem};
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::num::TryFromIntError;
 use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
 
-#[allow(non_camel_case_types,dead_code)]
+#[allow(non_camel_case_types, dead_code)]
 pub type u40 = UIntPair<u8>;
 
-#[allow(non_camel_case_types,dead_code)]
+#[allow(non_camel_case_types, dead_code)]
 pub type u48 = UIntPair<u16>;
 
 
-#[derive(Copy, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct UIntPair<T> {
     /// member containing lower significant integer value
-    low: [u8;4],
+    low: [u8; 4],
 
     /// member containing higher significant integer value
     high: T,
@@ -47,18 +47,17 @@ impl<T: Int> UIntPair<T> {
 
     pub fn min_value() -> Self {
         Self {
-            low: [0;4],
-            high: T::MIN_VALUE
+            low: [0; 4],
+            high: T::MIN_VALUE,
         }
     }
 
     pub fn max_value() -> Self {
         Self {
-            low: [1;4],
-            high: T::MAX_VALUE
+            low: [1; 4],
+            high: T::MAX_VALUE,
         }
     }
-
 }
 
 impl<T: Int> Debug for UIntPair<T> {
@@ -269,7 +268,6 @@ macro_rules! impl_UIntPair_traits {
                     (UIntPair::<T>::from(self) >> rhs)
                 }
             }
-
         )*
     }
 }
@@ -356,6 +354,43 @@ impl<T: Int> Shr<UIntPair<T>> for u64 {
     }
 }
 
+/// Bitshift left for right site UIntPair<T> left site usize
+impl<T: Int> Shl<UIntPair<T>> for usize {
+    type Output = usize;
+
+    fn shl(self, rhs: UIntPair<T>) -> usize {
+        (self << usize::from(rhs))
+    }
+}
+
+///// Bitshift right for right site UIntPair<T>
+//impl<T: Int> Shr for UIntPair<T> {
+//    type Output = Self;
+//
+//    fn shr(self, rhs: Self) -> Self {
+//        (usize::from(self) >> usize::from(rhs)).into()
+//    }
+//}
+
+/// Bitshift right for right site usize
+impl<T: Int> Shr<usize> for UIntPair<T> {
+    type Output = usize;
+
+    fn shr(self, rhs: usize) -> usize {
+        (usize::from(self) >> rhs)
+    }
+}
+
+/// Bitshift right for right site UIntPair<T> left site usize
+impl<T: Int> Shr<UIntPair<T>> for usize {
+    type Output = usize;
+
+    fn shr(self, rhs: UIntPair<T>) -> usize {
+        (self >> usize::from(rhs))
+    }
+}
+
+
 /// partial eq (==) with right site u64
 impl<T: Int> PartialEq<u64> for UIntPair<T> {
     fn eq(&self, other: &u64) -> bool {
@@ -365,6 +400,20 @@ impl<T: Int> PartialEq<u64> for UIntPair<T> {
 
 /// partial eq (==) with left site u64
 impl<T: Int> PartialEq<UIntPair<T>> for u64 {
+    fn eq(&self, other: &UIntPair<T>) -> bool {
+        other.eq(self)
+    }
+}
+
+/// partial eq (==) with right site i32
+impl<T: Int> PartialEq<i32> for UIntPair<T> {
+    fn eq(&self, other: &i32) -> bool {
+        self.eq(&Self::from(*other))
+    }
+}
+
+/// partial eq (==) with left site i32
+impl<T: Int> PartialEq<UIntPair<T>> for i32 {
     fn eq(&self, other: &UIntPair<T>) -> bool {
         other.eq(self)
     }
@@ -399,11 +448,11 @@ impl<T: Int> BitAnd for UIntPair<T> {
     fn bitand(self, rhs: Self) -> Self::Output {
         let low_self_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(self.low) }.to_le();
         let low_rhs_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(rhs.low) }.to_le();
-        
+
         let new_low = low_self_as_arr & low_rhs_as_arr;
         Self {
             low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
-            high: self.high & rhs.high
+            high: self.high & rhs.high,
         }
     }
 }
@@ -435,11 +484,11 @@ impl<T: Int> BitOr for UIntPair<T> {
     fn bitor(self, rhs: Self) -> Self::Output {
         let low_self_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(self.low) }.to_le();
         let low_rhs_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(rhs.low) }.to_le();
-        
+
         let new_low = low_self_as_arr | low_rhs_as_arr;
         Self {
             low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
-            high: self.high | rhs.high
+            high: self.high | rhs.high,
         }
     }
 }
@@ -469,11 +518,11 @@ impl<T: Int> BitXor for UIntPair<T> {
     fn bitxor(self, rhs: Self) -> Self::Output {
         let low_self_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(self.low) }.to_le();
         let low_rhs_as_arr = unsafe { std::mem::transmute::<[u8; 4], u32>(rhs.low) }.to_le();
-        
+
         let new_low = low_self_as_arr ^ low_rhs_as_arr;
         Self {
             low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
-            high: self.high ^ rhs.high
+            high: self.high ^ rhs.high,
         }
     }
 }
@@ -501,7 +550,7 @@ impl<T: Int> From<u32> for UIntPair<T> {
     fn from(item: u32) -> Self {
         Self {
             low: unsafe { std::mem::transmute::<u32, [u8; 4]>(item) },
-            high: T::MIN_VALUE
+            high: T::MIN_VALUE,
         }
     }
 }
@@ -514,7 +563,7 @@ impl<T: Int> From<i32> for UIntPair<T> {
         } else {
             Self {
                 low: unsafe { std::mem::transmute::<i32, [u8; 4]>(item) },
-                high: T::MAX_VALUE
+                high: T::MAX_VALUE,
             }
         }
     }
@@ -563,44 +612,52 @@ impl<T: Int> From<UIntPair<T>> for i64 {
     }
 }
 
+/// Ermöglicht die Konvertierung von UIntPair nach usize.
+impl<T: Int> From<UIntPair<T>> for usize {
+    fn from(item: UIntPair<T>) -> Self {
+        let low_bits: usize = (UIntPair::<T>::LOW_BITS as u8).into();
+        unsafe{(item.high.into() << low_bits) as usize | (std::mem::transmute::<[u8; 4], u32>(item.low)) as usize}
+    }
+}
+
 /// bitAnd-assign operator right site with all possible types (except u64)
 impl<T: Int, R: BitAnd<Self, Output=Self>> BitAndAssign<R> for UIntPair<T> {
-    fn bitand_assign (&mut self, other: R) {
+    fn bitand_assign(&mut self, other: R) {
         *self = other & *self;
     }
 }
 
 /// bitAnd-assign operator right site with u64
 impl<T: Int> BitAndAssign<u64> for UIntPair<T> {
-    fn bitand_assign (&mut self, other: u64) {
+    fn bitand_assign(&mut self, other: u64) {
         *self = Self::from(other & *self);
     }
 }
 
 /// bitOr-assign operator right site with all possible types (except u64)
 impl<T: Int, R: BitOr<Self, Output=Self>> BitOrAssign<R> for UIntPair<T> {
-    fn bitor_assign (&mut self, other: R) {
+    fn bitor_assign(&mut self, other: R) {
         *self = other | *self;
     }
 }
 
 /// bitOr-assign operator right site with u64
 impl<T: Int> BitOrAssign<u64> for UIntPair<T> {
-    fn bitor_assign (&mut self, other: u64) {
+    fn bitor_assign(&mut self, other: u64) {
         *self = Self::from(other | *self);
     }
 }
 
 /// bitXor-assign operator right site with all possible types (except u64)
 impl<T: Int, R: BitXor<Self, Output=Self>> BitXorAssign<R> for UIntPair<T> {
-    fn bitxor_assign (&mut self, other: R) {
+    fn bitxor_assign(&mut self, other: R) {
         *self = other ^ *self;
     }
 }
 
 /// bitXor-assign operator right site with u64
 impl<T: Int> BitXorAssign<u64> for UIntPair<T> {
-    fn bitxor_assign (&mut self, other: u64) {
+    fn bitxor_assign(&mut self, other: u64) {
         *self = Self::from(other ^ *self);
     }
 }
@@ -618,6 +675,7 @@ impl<T: Int> AddAssign<u64> for UIntPair<T> {
         *self = Self::from(*self + other);
     }
 }
+
 
 /// subtraction-assign operator right site u64
 impl<T: Int> SubAssign<u64> for UIntPair<T> {
@@ -654,7 +712,6 @@ impl<T: Int> Sub<UIntPair<T>> for u64 {
 }
 
 
-
 /// addition operator right site UIntPair<T>
 impl<T: Int> Add for UIntPair<T> {
     type Output = Self;
@@ -666,7 +723,7 @@ impl<T: Int> Add for UIntPair<T> {
         let new_low = (add_low & u32::max_value() as u64) as u32;
         Self {
             low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low) },
-            high: self.high + other.high + (T::from(add_high) & T::MAX_VALUE) 
+            high: self.high + other.high + (T::from(add_high) & T::MAX_VALUE),
         }
     }
 }
@@ -689,17 +746,63 @@ impl<T: Int> Add<UIntPair<T>> for u64 {
     }
 }
 
+
+/// remainder operator right site UIntPair<T>
+impl<T: Int> Rem for UIntPair<T> {
+    type Output = Self;
+
+    fn rem(self, other: Self) -> Self {
+        Self {
+            low: unsafe{std::mem::transmute::<u32, [u8; 4]>(std::mem::transmute::<[u8; 4], u32>(self.low) % std::mem::transmute::<[u8; 4], u32>(other.low))},
+            high: T::from(0),
+        }
+    }
+}
+
+/// remainder operator right site u64
+impl<T: Int> Rem<u64> for UIntPair<T> {
+    type Output = Self;
+
+    fn rem(self, other: u64) -> Self {
+        self % Self::from(other)
+    }
+}
+
+/// remainder operator left site u64
+impl<T: Int> Rem<UIntPair<T>> for u64 {
+    type Output = Self;
+
+    fn rem(self, other: UIntPair<T>) -> Self {
+        u64::from(other % self)
+    }
+}
+
+/// Ermöglicht die Konvertierung von usize nach UIntPair.
+impl<T: Int> From<usize> for UIntPair<T> {
+    fn from(item: usize) -> Self {
+        assert!(item >> Self::DIGITS == 0, "You tried to convert a usize into a smaller value. You would lose information.");
+
+        let low = item & u32::max_value() as usize;
+        let high = (item >> Self::LOW_BITS) & T::MAX_VALUE.into() as usize;
+
+        Self {
+            low: unsafe { std::mem::transmute::<u32, [u8; 4]>(low as u32) },
+            high: T::try_from(high as u64).expect("From<usize> for UIntPair<T> ist schiefgelaufen."),
+        }
+    }
+}
+
 /// Ermöglicht die Konvertierung von u64 nach UIntPair.
 impl<T: Int> From<u64> for UIntPair<T> {
     fn from(item: u64) -> Self {
         assert!(item >> Self::DIGITS == 0, "You tried to convert a real u64 into a smaller value. You would lose information.");
-        
+
         let new_low = item & u32::max_value() as u64;
         let high = (item >> Self::LOW_BITS) & T::MAX_VALUE.into();
-        
+
         Self {
             low: unsafe { std::mem::transmute::<u32, [u8; 4]>(new_low as u32) },
-            high: T::try_from(high).expect("From<u64> for UIntPair<T> ist schiefgelaufen.")
+            high: T::try_from(high).expect("From<u64> for UIntPair<T> ist schiefgelaufen."),
         }
     }
 }
@@ -721,9 +824,9 @@ impl<T: Int> Ord for UIntPair<T> {
 
 
 /// Stellt sicher, dass der Wert (in high) einen Maximal- und Minimalwert besitzt.
-pub trait Int: Into<u64> + From<u8> + Copy + Shl<Output=Self> + Add<Output=Self> 
-          + BitAnd<Output=Self> + Debug + TryFrom<u64, Error=TryFromIntError> + Sub<Output=Self> 
-          + PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self> + Eq  {
+pub trait Int: Into<u64> + From<u8> + Copy + Shl<Output=Self> + Add<Output=Self>
++ BitAnd<Output=Self> + Debug + TryFrom<u64, Error=TryFromIntError> + Sub<Output=Self>
++ PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self> + Eq {
     const MAX_VALUE: Self;
     const MIN_VALUE: Self;
     fn wrapping_add(self, rhs: Self) -> Self;
@@ -731,7 +834,7 @@ pub trait Int: Into<u64> + From<u8> + Copy + Shl<Output=Self> + Add<Output=Self>
 }
 
 pub trait Typable {
-    const TYPE: &'static str; 
+    const TYPE: &'static str;
     fn max_value() -> Self;
     fn min_value() -> Self;
 }
@@ -749,7 +852,7 @@ impl Typable for u64 {
 
 impl Typable for u40 {
     const TYPE: &'static str = "u40";
-    
+
     fn max_value() -> Self {
         Self::max_value()
     }
@@ -760,7 +863,7 @@ impl Typable for u40 {
 
 impl Typable for u48 {
     const TYPE: &'static str = "u48";
-    
+
     fn max_value() -> Self {
         Self::max_value()
     }
@@ -768,8 +871,6 @@ impl Typable for u48 {
         Self::min_value()
     }
 }
-
-
 
 
 impl Int for u32 {
@@ -818,7 +919,7 @@ mod tests {
         let mut b = u40::max_value();
         let mut c = u40::max_value();
         let mut d = u40::max_value();
-        
+
         let mut right_val: u64 = u40::max_value().into();
         for i in 0..u16::max_value() {
             b -= i as u16;
@@ -827,21 +928,20 @@ mod tests {
             right_val = right_val.wrapping_sub(i as u64);
         }
 
-        assert_eq!(u64::from(b),right_val);
-        assert_eq!(u64::from(c),right_val);
-        assert_eq!(u64::from(d),right_val);
-        
+        assert_eq!(u64::from(b), right_val);
+        assert_eq!(u64::from(c), right_val);
+        assert_eq!(u64::from(d), right_val);
     }
 
-      /// sub a lot of u32 values
-   #[test]
+    /// sub a lot of u32 values
+    #[test]
     fn test_sub_random() {
         for i in 0..(u32::max_value()) {
-            for j in 0..(i+1) {
+            for j in 0..(i + 1) {
                 let x = u40::from(i);
                 let y = u40::from(j);
-    
-                assert_eq!(i+j, u64::from(x+y) as u32);
+
+                assert_eq!(i + j, u64::from(x + y) as u32);
             }
         }
     }
@@ -852,7 +952,7 @@ mod tests {
         let mut b = u40::from(0);
         let mut c = u40::from(0);
         let mut d = u40::from(0);
-        
+
         let mut right_val: u64 = 0;
         for i in 0..u16::max_value() {
             b += i as u16;
@@ -861,20 +961,19 @@ mod tests {
             right_val += i as u64;
         }
 
-        assert_eq!(u64::from(b),right_val);
-        assert_eq!(u64::from(c),right_val);
-        assert_eq!(u64::from(d),right_val);
-        
+        assert_eq!(u64::from(b), right_val);
+        assert_eq!(u64::from(c), right_val);
+        assert_eq!(u64::from(d), right_val);
     }
 
     /// adds a lot of u32 values
-   #[test]
+    #[test]
     fn test_add_random() {
         for i in 0..u32::max_value() {
             for j in 0..u32::max_value() {
                 let x = u40::from(i);
                 let y = u40::from(j);
-                assert_eq!(i+j, u64::from(x+y) as u32);
+                assert_eq!(i + j, u64::from(x + y) as u32);
             }
         }
     }
@@ -884,8 +983,8 @@ mod tests {
     fn test_add_borders() {
         let x = u40::from(0b1111111111111111111111111111111111111110 as u64);
         let y = 1 as u32;
-  
-        assert_eq!(0b1111111111111111111111111111111111111110+1,u64::from(y+x))
+
+        assert_eq!(0b1111111111111111111111111111111111111110 + 1, u64::from(y + x))
     }
 
     /// Checks the conversion from u8 to u40 
@@ -920,7 +1019,7 @@ mod tests {
         }
     }
 
-        /// Checks the conversion from u32 to u40
+    /// Checks the conversion from u32 to u40
     #[test]
     fn test_from_u32() {
         for i in 0..u32::max_value() {
@@ -957,7 +1056,7 @@ mod tests {
         let d: u64 = 80;
         let start = u40::from(1000);
         assert_eq!(u64::from(start - x - z - b - d), 825);
-        assert_eq!(2000 as u64 - (start-x), 1025);
+        assert_eq!(2000 as u64 - (start - x), 1025);
     }
 
     // TODO: Teste den ganzen BitAnd, BitOr, BitXor, Shr, Shl, (+Assigns), PartialEq, Add und Sub Overflows, PartialOrd Kram
