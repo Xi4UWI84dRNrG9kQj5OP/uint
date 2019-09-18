@@ -38,7 +38,7 @@ impl<T: Int> UIntPair<T> {
     const DIGITS: usize = Self::LOW_BITS + Self::HIGH_BITS;
 
     /// number of bytes in UIntPair
-    //const BYTES: usize = mem::size_of::<u32>() + mem::size_of::<T>();
+    const BYTES: usize = mem::size_of::<u32>() + mem::size_of::<T>();
 
     /// construct unit pair from lower and higher parts.
     pub fn new<E: Into<Self>>(val: E) -> Self {
@@ -354,43 +354,6 @@ impl<T: Int> Shr<UIntPair<T>> for u64 {
     }
 }
 
-/// Bitshift left for right site UIntPair<T> left site usize
-impl<T: Int> Shl<UIntPair<T>> for usize {
-    type Output = usize;
-
-    fn shl(self, rhs: UIntPair<T>) -> usize {
-        (self << usize::from(rhs))
-    }
-}
-
-///// Bitshift right for right site UIntPair<T>
-//impl<T: Int> Shr for UIntPair<T> {
-//    type Output = Self;
-//
-//    fn shr(self, rhs: Self) -> Self {
-//        (usize::from(self) >> usize::from(rhs)).into()
-//    }
-//}
-
-/// Bitshift right for right site usize
-impl<T: Int> Shr<usize> for UIntPair<T> {
-    type Output = usize;
-
-    fn shr(self, rhs: usize) -> usize {
-        (usize::from(self) >> rhs)
-    }
-}
-
-/// Bitshift right for right site UIntPair<T> left site usize
-impl<T: Int> Shr<UIntPair<T>> for usize {
-    type Output = usize;
-
-    fn shr(self, rhs: UIntPair<T>) -> usize {
-        (self >> usize::from(rhs))
-    }
-}
-
-
 /// partial eq (==) with right site u64
 impl<T: Int> PartialEq<u64> for UIntPair<T> {
     fn eq(&self, other: &u64) -> bool {
@@ -612,14 +575,6 @@ impl<T: Int> From<UIntPair<T>> for i64 {
     }
 }
 
-/// Ermöglicht die Konvertierung von UIntPair nach usize.
-impl<T: Int> From<UIntPair<T>> for usize {
-    fn from(item: UIntPair<T>) -> Self {
-        let low_bits: usize = (UIntPair::<T>::LOW_BITS as u8).into();
-        unsafe{(item.high.into() << low_bits) as usize | (std::mem::transmute::<[u8; 4], u32>(item.low)) as usize}
-    }
-}
-
 /// bitAnd-assign operator right site with all possible types (except u64)
 impl<T: Int, R: BitAnd<Self, Output=Self>> BitAndAssign<R> for UIntPair<T> {
     fn bitand_assign(&mut self, other: R) {
@@ -774,21 +729,6 @@ impl<T: Int> Rem<UIntPair<T>> for u64 {
 
     fn rem(self, other: UIntPair<T>) -> Self {
         u64::from(other % self)
-    }
-}
-
-/// Ermöglicht die Konvertierung von usize nach UIntPair.
-impl<T: Int> From<usize> for UIntPair<T> {
-    fn from(item: usize) -> Self {
-        assert!(item >> Self::DIGITS == 0, "You tried to convert a usize into a smaller value. You would lose information.");
-
-        let low = item & u32::max_value() as usize;
-        let high = (item >> Self::LOW_BITS) & T::MAX_VALUE.into() as usize;
-
-        Self {
-            low: unsafe { std::mem::transmute::<u32, [u8; 4]>(low as u32) },
-            high: T::try_from(high as u64).expect("From<usize> for UIntPair<T> ist schiefgelaufen."),
-        }
     }
 }
 
