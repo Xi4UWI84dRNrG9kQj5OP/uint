@@ -1,15 +1,9 @@
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate rmp_serde as rmps;
-
 use std::mem;
 use std::ops::{Shl, Shr, Add, AddAssign, Sub, SubAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign};
 use std::convert::TryFrom;
-use std::fmt::Debug;
+use std::fmt::{Display, Debug};
 use std::num::TryFromIntError;
 use std::cmp::Ordering;
-use serde::{Deserialize, Serialize};
 
 #[allow(non_camel_case_types,dead_code)]
 pub type u40 = UIntPair<u8>;
@@ -18,7 +12,7 @@ pub type u40 = UIntPair<u8>;
 pub type u48 = UIntPair<u16>;
 
 
-#[derive(Copy, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct UIntPair<T> {
     /// member containing lower significant integer value
     low: [u8;4],
@@ -58,12 +52,11 @@ impl<T: Int> UIntPair<T> {
             high: T::MAX_VALUE
         }
     }
-
 }
 
 impl<T: Int> Debug for UIntPair<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        u64::from(*self).fmt(f)
+        Debug::fmt(&u64::from(*self),f)
     }
 }
 
@@ -719,21 +712,62 @@ impl<T: Int> Ord for UIntPair<T> {
     }
 }
 
+impl<T: Int> Display for UIntPair<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&u64::from(*self),f)
+    }
+}
 
 /// Stellt sicher, dass der Wert (in high) einen Maximal- und Minimalwert besitzt.
 pub trait Int: Into<u64> + From<u8> + Copy + Shl<Output=Self> + Add<Output=Self> 
           + BitAnd<Output=Self> + Debug + TryFrom<u64, Error=TryFromIntError> + Sub<Output=Self> 
-          + PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self> + Eq  {
+          + Typable + PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self> + Eq  {
     const MAX_VALUE: Self;
     const MIN_VALUE: Self;
     fn wrapping_add(self, rhs: Self) -> Self;
     fn wrapping_sub(self, rhs: Self) -> Self;
 }
 
-pub trait Typable {
+pub trait Typable: Display {
     const TYPE: &'static str; 
     fn max_value() -> Self;
     fn min_value() -> Self;
+}
+
+
+
+impl Typable for u8 {
+    const TYPE: &'static str = "u8";
+
+    fn max_value() -> Self {
+        Self::max_value()
+    }
+    fn min_value() -> Self {
+        Self::min_value()
+    }
+}
+
+impl Typable for u16 {
+    const TYPE: &'static str = "u16";
+
+    fn max_value() -> Self {
+        Self::max_value()
+    }
+    fn min_value() -> Self {
+        Self::min_value()
+    }
+}
+
+
+impl Typable for u32 {
+    const TYPE: &'static str = "u32";
+
+    fn max_value() -> Self {
+        Self::max_value()
+    }
+    fn min_value() -> Self {
+        Self::min_value()
+    }
 }
 
 impl Typable for u64 {
@@ -756,6 +790,7 @@ impl Typable for u40 {
     fn min_value() -> Self {
         Self::min_value()
     }
+
 }
 
 impl Typable for u48 {
