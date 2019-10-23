@@ -43,9 +43,9 @@ impl<T: Int> Debug for UIntPair<T> {
     }
 }
 
-
-impl<T: Int> std::default::Default for UIntPair<T> {
-    fn default() -> Self { Self::from(0_u64) }
+use num::Bounded;
+impl<T: Int + Bounded> std::default::Default for UIntPair<T> {
+    fn default() -> Self { Self::min_value() }
 }
 
 impl<T: num::Bounded> num::Bounded for UIntPair<T> {
