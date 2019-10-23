@@ -57,6 +57,11 @@ impl<T: Int> Debug for UIntPair<T> {
     }
 }
 
+
+impl<T: Int> Default for UIntPair<T> {
+    fn default() -> Self { Self::from(0_u64) }
+}
+
 macro_rules! impl_UIntPair_traits {
     ($($int:ty)*) => {
         $(
