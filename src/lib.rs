@@ -35,20 +35,6 @@ impl<T: Int> UIntPair<T> {
     pub fn new<E: Into<Self>>(val: E) -> Self {
         val.into()
     }
-
-    pub fn min_value() -> Self {
-        Self {
-            low: [0; 4],
-            high: T::MIN_VALUE,
-        }
-    }
-
-    pub fn max_value() -> Self {
-        Self {
-            low: [1; 4],
-            high: T::MAX_VALUE,
-        }
-    }
 }
 
 impl<T: Int> Debug for UIntPair<T> {
@@ -60,6 +46,22 @@ impl<T: Int> Debug for UIntPair<T> {
 
 impl<T: Int> Default for UIntPair<T> {
     fn default() -> Self { Self::from(0_u64) }
+}
+
+impl<T: num::Bounded> num::Bounded for UIntPair<T> {
+    fn min_value() -> Self {
+        Self {
+            low: [0; 4],
+            high: T::min_value(),
+        }
+    }
+
+    fn max_value() -> Self {
+        Self {
+            low: [1; 4],
+            high: T::min_value(),
+        }
+    }
 }
 
 macro_rules! impl_UIntPair_traits {
@@ -774,80 +776,35 @@ pub trait Int: Into<u64> + From<u8> + Copy + Shl<Output=Self> + Add<Output=Self>
     fn wrapping_sub(self, rhs: Self) -> Self;
 }
 
-pub trait Typable: Display {
+pub trait Typable: Display + num::Bounded {
     const TYPE: &'static str; 
-    fn max_value() -> Self;
-    fn min_value() -> Self;
 }
 
 
 
 impl Typable for u8 {
     const TYPE: &'static str = "u8";
-
-    fn max_value() -> Self {
-        Self::max_value()
-    }
-    fn min_value() -> Self {
-        Self::min_value()
-    }
 }
 
 impl Typable for u16 {
     const TYPE: &'static str = "u16";
-
-    fn max_value() -> Self {
-        Self::max_value()
-    }
-    fn min_value() -> Self {
-        Self::min_value()
-    }
 }
 
 
 impl Typable for u32 {
     const TYPE: &'static str = "u32";
-
-    fn max_value() -> Self {
-        Self::max_value()
-    }
-    fn min_value() -> Self {
-        Self::min_value()
-    }
 }
 
 impl Typable for u64 {
     const TYPE: &'static str = "u64";
-
-    fn max_value() -> Self {
-        Self::max_value()
-    }
-    fn min_value() -> Self {
-        Self::min_value()
-    }
 }
 
 impl Typable for u40 {
     const TYPE: &'static str = "u40";
-
-    fn max_value() -> Self {
-        Self::max_value()
-    }
-    fn min_value() -> Self {
-        Self::min_value()
-    }
-
 }
 
 impl Typable for u48 {
     const TYPE: &'static str = "u48";
-
-    fn max_value() -> Self {
-        Self::max_value()
-    }
-    fn min_value() -> Self {
-        Self::min_value()
-    }
 }
 
 
@@ -890,7 +847,7 @@ impl Int for u8 {
 #[cfg(test)]
 mod tests {
     use super::u40;
-
+    use num_traits::bounds::Bounded;
     /// subs and assign values
     #[test]
     fn test_sub_assign_random() {
