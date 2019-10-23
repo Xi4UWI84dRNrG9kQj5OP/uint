@@ -44,7 +44,7 @@ impl<T: Int> Debug for UIntPair<T> {
 }
 
 
-impl<T: Int> Default for UIntPair<T> {
+impl<T: Int> std::default::Default for UIntPair<T> {
     fn default() -> Self { Self::from(0_u64) }
 }
 
@@ -847,7 +847,7 @@ impl Int for u8 {
 #[cfg(test)]
 mod tests {
     use super::u40;
-    use num_traits::bounds::Bounded;
+    use num::Bounded;
     /// subs and assign values
     #[test]
     fn test_sub_assign_random() {
