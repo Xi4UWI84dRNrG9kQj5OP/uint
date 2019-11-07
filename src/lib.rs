@@ -58,7 +58,7 @@ impl<T: num::Bounded> num::Bounded for UIntPair<T> {
 
     fn max_value() -> Self {
         Self {
-            low: [1; 4],
+            low: [u8::max_value(); 4],
             high: T::max_value(),
         }
     }
