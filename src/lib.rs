@@ -1,3 +1,5 @@
+use serde::{Serialize, Deserialize};
+
 use std::mem;
 use std::ops::{Shl, Shr, Add, AddAssign, Sub, SubAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Rem};
 use std::convert::TryFrom;
@@ -12,7 +14,7 @@ pub type u40 = UIntPair<u8>;
 pub type u48 = UIntPair<u16>;
 
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct UIntPair<T> {
     /// member containing lower significant integer value
     low: [u8; 4],
@@ -35,32 +37,25 @@ impl<T: Int> UIntPair<T> {
     pub fn new<E: Into<Self>>(val: E) -> Self {
         val.into()
     }
+
+    pub fn min_value() -> Self {
+        Self {
+            low: [0; 4],
+            high: T::MIN_VALUE,
+        }
+    }
+
+    pub fn max_value() -> Self {
+        Self {
+            low: [u8::max_value(); 4],
+            high: T::MAX_VALUE,
+        }
+    }
 }
 
 impl<T: Int> Debug for UIntPair<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&u64::from(*self),f)
-    }
-}
-
-use num::Bounded;
-impl<T: Int + Bounded> std::default::Default for UIntPair<T> {
-    fn default() -> Self { Self::min_value() }
-}
-
-impl<T: num::Bounded> num::Bounded for UIntPair<T> {
-    fn min_value() -> Self {
-        Self {
-            low: [0; 4],
-            high: T::min_value(),
-        }
-    }
-
-    fn max_value() -> Self {
-        Self {
-            low: [u8::max_value(); 4],
-            high: T::max_value(),
-        }
     }
 }
 
@@ -573,6 +568,30 @@ impl<T: Int> From<UIntPair<T>> for i64 {
     }
 }
 
+
+/// Ermöglicht die Konvertierung von usize nach UIntPair.
+impl<T: Int> From<usize> for UIntPair<T> {
+    fn from(item: usize) -> Self {
+        assert!(item >> Self::DIGITS == 0, "You tried to convert a usize into a smaller value. You would lose information.");
+
+        let low = item & u32::max_value() as usize;
+        let high = (item >> Self::LOW_BITS) & T::MAX_VALUE.into() as usize;
+
+        Self {
+            low: unsafe { std::mem::transmute::<u32, [u8; 4]>(low as u32) },
+            high: T::try_from(high as u64).expect("From<usize> for UIntPair<T> ist schiefgelaufen."),
+        }
+    }
+}
+
+        /// Ermöglicht die Konvertierung von UIntPair nach usize.
+impl<T: Int> From<UIntPair<T>> for usize {
+    fn from(item: UIntPair<T>) -> Self {
+        let low_bits: usize = (UIntPair::<T>::LOW_BITS as u8).into();
+        unsafe{(item.high.into() << low_bits) as usize | (std::mem::transmute::<[u8; 4], u32>(item.low)) as usize}
+    }
+}
+
 /// bitAnd-assign operator right site with all possible types (except u64)
 impl<T: Int, R: BitAnd<Self, Output=Self>> BitAndAssign<R> for UIntPair<T> {
     fn bitand_assign(&mut self, other: R) {
@@ -769,44 +788,12 @@ impl<T: Int> Display for UIntPair<T> {
 /// Stellt sicher, dass der Wert (in high) einen Maximal- und Minimalwert besitzt.
 pub trait Int: Into<u64> + From<u8> + Copy + Shl<Output=Self> + Add<Output=Self> 
           + BitAnd<Output=Self> + Debug + TryFrom<u64, Error=TryFromIntError> + Sub<Output=Self> 
-          + Typable + PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self> + Eq  {
+           + PartialEq + BitAnd<Output=Self> + BitOr<Output=Self> + BitXor<Output=Self> + Eq {
     const MAX_VALUE: Self;
     const MIN_VALUE: Self;
     fn wrapping_add(self, rhs: Self) -> Self;
     fn wrapping_sub(self, rhs: Self) -> Self;
 }
-
-pub trait Typable: Display + num::Bounded {
-    const TYPE: &'static str; 
-}
-
-
-
-impl Typable for u8 {
-    const TYPE: &'static str = "u8";
-}
-
-impl Typable for u16 {
-    const TYPE: &'static str = "u16";
-}
-
-
-impl Typable for u32 {
-    const TYPE: &'static str = "u32";
-}
-
-impl Typable for u64 {
-    const TYPE: &'static str = "u64";
-}
-
-impl Typable for u40 {
-    const TYPE: &'static str = "u40";
-}
-
-impl Typable for u48 {
-    const TYPE: &'static str = "u48";
-}
-
 
 impl Int for u32 {
     const MAX_VALUE: Self = Self::max_value();
