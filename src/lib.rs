@@ -561,6 +561,13 @@ impl<T: Int> From<UIntPair<T>> for u64 {
     }
 }
 
+/// Ermöglicht die Konvertierung von UIntPair nach u16.
+impl<T: Int> From<UIntPair<T>> for u16 {
+    fn from(item: UIntPair<T>) -> Self {
+        u64::from(item) as u16
+    }
+}
+
 /// Ermöglicht die Konvertierung von UIntPair nach i64.
 impl<T: Int> From<UIntPair<T>> for i64 {
     fn from(item: UIntPair<T>) -> Self {
